@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTSIMP - Interactive Local Setup Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Visualization & Content Choices:
+        - Report Info: System Prerequisites -> Goal: Inform -> Presentation: HTML List -> Interaction: Static display.
+        - Report Info: Software Tool (e.g., Laragon) -> Goal: Inform/Instruct -> Presentation: Card/Accordion with tool name, version, download link, verification command -> Interaction: Click to view details in content area, copy button for command. Justification: Organizes multiple tools clearly.
+        - Report Info: Setup Step (e.g., 3.2 Copy zip) -> Goal: Instruct -> Presentation: Numbered step with text and copyable code block for commands. -> Interaction: Copy button for command. Justification: Clear, actionable steps.
+        - Report Info: .env configuration -> Goal: Instruct -> Presentation: Formatted code block showing key-value pairs. -> Interaction: Copy button for entire block. Justification: Easy to copy config.
+        - Report Info: Troubleshooting item -> Goal: Help/Solve -> Presentation: Expandable item (Problem title, Solution details). -> Interaction: Click to expand (achieved by loading content). Justification: Keeps troubleshooting section concise until needed.
+        - Library/Method: Vanilla JS for navigation and copy-to-clipboard. Tailwind CSS for styling. No Chart.js/Plotly as no graphical data.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .code-block {
+            position: relative;
+            background-color: #1f2937; /* bg-gray-800 */
+            color: #f3f4f6; /* text-gray-200 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+        }
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .copy-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #3b82f6; /* bg-blue-500 */
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .copy-button:hover {
+            background-color: #2563eb; /* bg-blue-600 */
+        }
+        .copy-feedback {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #10b981; /* bg-green-500 */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .sidebar-item.active {
+            background-color: #4b5563; /* bg-gray-600 */
+        }
+        /* Mobile sidebar toggle */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                height: 100%;
+                z-index: 40; /* Ensure sidebar is above content but below toggle button if it overlaps */
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+    <div class="flex h-screen">
+        <button id="sidebarToggle" class="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-700 text-white rounded-md">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+        </button>
+
+        <aside id="sidebar" class="sidebar w-64 bg-slate-800 text-slate-100 p-4 space-y-2 fixed md:relative inset-y-0 left-0 z-40 md:z-auto md:translate-x-0">
+            <h1 class="text-xl font-bold mb-4 border-b border-slate-700 pb-2">CTSIMP Setup</h1>
+            <nav>
+                <ul id="navigationMenu">
+                    </ul>
+            </nav>
+        </aside>
+
+        <main id="mainContent" class="flex-1 p-6 md:p-10 overflow-y-auto md:ml-64">
+            <div id="contentHost" class="max-w-4xl mx-auto">
+                </div>
+        </main>
+    </div>
+
+    <div id="copyFeedback" class="copy-feedback">Copied to clipboard!</div>
+
+    <script>
+        const sections = [
+            { 
+                id: 'overview', 
+                title: 'Overview',
+                content: `
+                    <h2 class="text-3xl font-bold mb-6 text-sky-700">Welcome to the CTSIMP Interactive Setup Guide</h2>
+                    <p class="mb-4 text-lg">This interactive guide provides a step-by-step walkthrough for setting up the Caraga Heritage Sites & Tourist Spots Interactive Map Portal (CTSIMP) on your local Windows machine.</p>
+                    <p class="mb-4">Navigate through the sections using the sidebar on the left. Each section details specific requirements, software installations, configurations, and verification steps.</p>
+                    <p class="mb-4">Follow each step carefully to ensure a successful local deployment of the CTSIMP project. Code snippets can be easily copied using the 'Copy' button provided with each block.</p>
+                    <p>Let's get started!</p>
+                `
+            },
+            { 
+                id: 'prerequisites', 
+                title: '1. System Prerequisites',
+                content: `
+                    <h3 class="text-2xl font-semibold mb-4 text-sky-600">1. System Prerequisites</h3>
+                    <p class="mb-4">Before you begin, ensure your system meets the following requirements. This section outlines the necessary operating system specifications and user privileges needed for a smooth installation process.</p>
+                    <ul class="list-disc list-inside mb-4 pl-4 space-y-2">
+                        <li><strong>Windows 10 or later (64-bit)</strong>
+                            <ul class="list-disc list-inside ml-6">
+                                <li>Ensure your OS is up to date with the latest security patches.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Administrator privileges</strong>
+                            <ul class="list-disc list-inside ml-6">
+                                <li>You will need admin rights to install software and modify environment variables.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                `
+            },
+            {
+                id: 'software-tools',
+                title: '2. Required Software & Tools',
+                intro: `
+                    <h3 class="text-2xl font-semibold mb-4 text-sky-600">2. Required Software & Tools</h3>
+                    <p class="mb-6">This section details all the software and command-line tools you must install on your Windows machine. For each tool, you'll find the recommended version, a download link, and a command to verify its successful installation. Accurate installation of these tools is crucial for the CTSIMP project to function correctly.</p>
+                `,
+                subSections: [
+                    {
+                        id: 'git',
+                        title: '2.1. Git (Optional)',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">2.1. Git (Optional)</h4>
+                            <p class="mb-2">Use Git if you want to keep a remote copy of your project or track changes using platforms like GitHub. If not, you can skip this tool.</p>
+                            <ul class="list-disc list-inside mb-3 pl-4">
+                                <li><strong>Version:</strong> 2.40.x or later</li>
+                                <li><strong>Download:</strong> <a href="https://git-scm.com/download/win" target="_blank" class="text-blue-500 hover:underline">https://git-scm.com/download/win</a></li>
+                            </ul>
+                            <p class="mb-2"><strong>Verify Installation:</strong></p>
+                            <div class="code-block"><pre><code>git --version</code></pre></div>
+                        `
+                    },
+                    {
+                        id: 'vscode',
+                        title: '2.2. Visual Studio Code (VS Code)',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">2.2. Visual Studio Code (VS Code)</h4>
+                            <p class="mb-2">A powerful and popular code editor for development.</p>
+                            <ul class="list-disc list-inside mb-3 pl-4">
+                                <li><strong>Version:</strong> 1.80.x or later</li>
+                                <li><strong>Download:</strong> <a href="https://code.visualstudio.com/Download" target="_blank" class="text-blue-500 hover:underline">https://code.visualstudio.com/Download</a></li>
+                                <li><strong>Extensions to install (inside VS Code):</strong>
+                                    <ul class="list-disc list-inside ml-6">
+                                        <li>PHP Intelephense</li>
+                                        <li>ESLint</li>
+                                        <li>Prettier – Code formatter</li>
+                                        <li>Docker (optional, if using containers later)</li>
+                                        <li>GitLens (if using Git)</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        `
+                    },
+                    {
+                        id: 'laragon',
+                        title: '2.3. Laragon',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">2.3. Laragon</h4>
+                            <p class="mb-2">A portable, isolated, fast & powerful universal development environment for PHP, Node.js, Python, Java, Go, Ruby. It bundles Apache/Nginx, MySQL/MariaDB, PHP, and more.</p>
+                            <ul class="list-disc list-inside mb-3 pl-4">
+                                <li><strong>Version:</strong> 5.0.x (recommended)</li>
+                                <li><strong>Download:</strong> <a href="https://laragon.org/download/" target="_blank" class="text-blue-500 hover:underline">https://laragon.org/download/</a> (choose Full version)</li>
+                                <li>After installing, open <strong>Laragon ▶ Settings ▶ Services & Ports</strong> to confirm Apache → port <code>80</code>, MySQL → port <code>3306</code>.</li>
+                                <li>Laragon’s root directory will act as your local webroot (by default <code>C:\\laragon\\www</code>).</li>
+                            </ul>
+                        `
+                    },
+                    {
+                        id: 'php',
+                        title: '2.4. PHP',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">2.4. PHP</h4>
+                            <p class="mb-2">The scripting language for the backend of CTSIMP.</p>
+                            <ul class="list-disc list-inside mb-3 pl-4">
+                                <li><strong>Version:</strong> 8.1.x or later (Laragon already bundles PHP).</li>
+                            </ul>
+                            <p class="mb-2"><strong>Confirm version by running in Laragon Terminal:</strong></p>
+                            <div class="code-block"><pre><code>php --version</code></pre></div>
+                        `
+                    },
+                    {
+                        id: 'composer',
+                        title: '2.5. Composer',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">2.5. Composer</h4>
+                            <p class="mb-2">A dependency manager for PHP.</p>
+                            <ul class="list-disc list-inside mb-3 pl-4">
+                                <li><strong>Version:</strong> 2.7.x or later</li>
+                                <li><strong>Download & installation:</strong>
+                                    <ul class="list-disc list-inside ml-6">
+                                        <li>Visit <a href="https://getcomposer.org/download/" target="_blank" class="text-blue-500 hover:underline">https://getcomposer.org/download/</a> and follow the Windows setup instructions.</li>
+                                        <li>Add Composer’s <code>bin</code> directory (e.g., <code>C:\\Users\\&lt;YourUser&gt;\\AppData\\Roaming\\Composer\\vendor\\bin</code>) to your PATH.</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                            <p class="mb-2"><strong>Verify Installation:</strong></p>
+                            <div class="code-block"><pre><code>composer --version</code></pre></div>
+                        `
+                    },
+                    {
+                        id: 'nodejs-npm',
+                        title: '2.6. Node.js & npm',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">2.6. Node.js & npm</h4>
+                            <p class="mb-2">Node.js is a JavaScript runtime for the frontend build process and development server. npm is the Node package manager.</p>
+                            <ul class="list-disc list-inside mb-3 pl-4">
+                                <li><strong>Version:</strong> Node.js 18.x LTS (includes npm 9.x or later)</li>
+                                <li><strong>Download:</strong> <a href="https://nodejs.org/en/download/" target="_blank" class="text-blue-500 hover:underline">https://nodejs.org/en/download/</a></li>
+                            </ul>
+                            <p class="mb-2"><strong>Verify Installation:</strong></p>
+                            <div class="code-block"><pre><code>node --version
+npm --version</code></pre></div>
+                        `
+                    },
+                    {
+                        id: 'yarn',
+                        title: '2.7. Yarn (Optional)',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">2.7. Yarn (Optional)</h4>
+                            <p class="mb-2">An alternative package manager to npm. If you prefer Yarn, install it via npm.</p>
+                            <p class="mb-2"><strong>Install Yarn globally:</strong></p>
+                            <div class="code-block"><pre><code>npm install --global yarn</code></pre></div>
+                            <p class="mt-3 mb-2"><strong>Verify Installation:</strong></p>
+                            <div class="code-block"><pre><code>yarn --version</code></pre></div>
+                        `
+                    },
+                    {
+                        id: 'tableplus',
+                        title: '2.8. TablePlus (or equivalent DB client)',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">2.8. TablePlus (or equivalent DB client)</h4>
+                            <p class="mb-2">A modern, native tool with elegant UI that allows you to simultaneously manage multiple databases: MySQL, PostgreSQL, SQL Server, SQLite, etc.</p>
+                            <ul class="list-disc list-inside mb-3 pl-4">
+                                <li><strong>Version:</strong> 5.x or later</li>
+                                <li><strong>Download:</strong> <a href="https://tableplus.com/" target="_blank" class="text-blue-500 hover:underline">https://tableplus.com/</a></li>
+                                <li>Required to inspect and manage the local MySQL databases.</li>
+                            </ul>
+                        `
+                    }
+                ]
+            },
+            {
+                id: 'project-archive',
+                title: '3. Obtaining & Extracting Project Archive',
+                content: `
+                    <h3 class="text-2xl font-semibold mb-4 text-sky-600">3. Obtaining & Extracting the Project Archive</h3>
+                    <p class="mb-6">This section guides you through acquiring the CTSIMP project files and placing them in the correct directory within your Laragon setup. Proper extraction and placement are essential for the local web server to find and serve the application files.</p>
+                    
+                    <h4 class="text-lg font-medium mb-2">3.1. Ensure you have the project zip file</h4>
+                    <p class="mb-3">Ensure you have the provided zip file containing both frontend and backend (e.g., <code>ctsimp.zip</code>).</p>
+
+                    <h4 class="text-lg font-medium mb-2">3.2. Copy the zip file to Laragon's www folder</h4>
+                    <p class="mb-1">Adjust <code>&lt;path-to-zip&gt;</code> accordingly.</p>
+                    <div class="code-block"><pre><code>copy &lt;path-to-zip&gt;\\ctsimp.zip C:\\laragon\\www\\ctsimp.zip</code></pre></div>
+                    
+                    <h4 class="text-lg font-medium mt-3 mb-2">3.3. Extract the archive in Laragon’s www directory</h4>
+                    <ul class="list-disc list-inside mb-3 pl-4">
+                        <li>Open File Explorer, navigate to <code>C:\\laragon\\www</code>.</li>
+                        <li>Right-click <code>ctsimp.zip</code> ▶ <strong>Extract All…</strong> ▶ set destination to <code>C:\\laragon\\www\\ctsimp</code>.</li>
+                        <li>After extraction, you’ll see two main folders: <code>frontend/</code> and <code>backend/</code> (inside <code>ctsimp/</code>).</li>
+                    </ul>
+
+                    <h4 class="text-lg font-medium mb-2">3.4. Place the frontend folder directly under Laragon’s www for serving</h4>
+                     <ul class="list-disc list-inside mb-3 pl-4">
+                        <li>Move or copy <code>C:\\laragon\\www\\ctsimp\\frontend</code> to <code>C:\\laragon\\www\\frontend</code>.</li>
+                        <li>You can delete <code>C:\\laragon\\www\\ctsimp\\frontend</code> after moving, if preferred.</li>
+                        <li>Verify that <code>C:\\laragon\\www\\frontend</code> now contains your frontend source.</li>
+                    </ul>
+                `
+            },
+            {
+                id: 'env-config',
+                title: '4. Environment Configuration',
+                intro: `
+                    <h3 class="text-2xl font-semibold mb-4 text-sky-600">4. Environment Configuration</h3>
+                    <p class="mb-6">Proper environment configuration is key for the backend to connect to the database and for the application to run correctly in your local development setup. This involves setting up the <code>.env</code> file for the backend and creating the necessary database.</p>
+                `,
+                subSections: [
+                    {
+                        id: 'backend-env',
+                        title: '4.1 & 4.2. Backend .env Setup',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">4.1. Copy & rename the environment template for backend</h4>
+                            <div class="code-block"><pre><code>cd C:\\laragon\\www\\ctsimp\\backend
+copy .env.example .env</code></pre></div>
+
+                            <h4 class="text-xl font-medium mt-4 mb-3">4.2. Edit <code>.env</code> using VS Code</h4>
+                            <p class="mb-2">Open the <code>backend</code> folder (<code>C:\\laragon\\www\\ctsimp\\backend</code>) in VS Code and edit the <code>.env</code> file with the following settings:</p>
+                            <div class="code-block"><pre><code>APP_URL=http://localhost
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=ctsimp_db
+DB_USERNAME=root
+DB_PASSWORD=
+NODE_ENV=development</code></pre></div>
+                            <p class="mt-2 mb-1"><em class="text-sm text-slate-600">*Note: Leave <code>DB_PASSWORD</code> blank if you haven't set a root password for MySQL in Laragon. Adjust other keys like caching or mail settings if needed for specific development tasks.</em></p>
+                        `
+                    },
+                    {
+                        id: 'database-creation',
+                        title: '4.3. Create Local Database',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">4.3. Create the local database (<code>ctsimp_db</code>)</h4>
+                            <p class="mb-2">You can create the database using Laragon's MySQL Terminal or a GUI client like TablePlus.</p>
+                            <p class="font-semibold mb-1">Using MySQL in Laragon Terminal:</p>
+                            <div class="code-block"><pre><code class="language-sql">mysql -u root -h 127.0.0.1 -P 3306
+CREATE DATABASE ctsimp_db;
+USE ctsimp_db;
+EXIT;</code></pre></div>
+                            <p class="font-semibold mt-3 mb-1">Or using TablePlus:</p>
+                            <ol class="list-decimal list-inside mb-3 pl-4">
+                                <li>Connect to <code>mysql://root:@127.0.0.1:3306</code>.</li>
+                                <li>Right-click in the database list area ▶ “Create Database” ▶ name it: <code>ctsimp_db</code>.</li>
+                            </ol>
+                        `
+                    }
+                ]
+            },
+            {
+                id: 'backend-setup',
+                title: '5. Backend Setup (PHP + Composer)',
+                intro: `
+                    <h3 class="text-2xl font-semibold mb-4 text-sky-600">5. Backend Setup (PHP + Composer)</h3>
+                    <p class="mb-6">This section covers installing PHP dependencies using Composer, generating an application key, running database migrations to set up the schema, seeding initial data, and starting the PHP development server for the backend API.</p>
+                `,
+                subSections: [
+                    {
+                        id: 'php-dependencies',
+                        title: '5.1 & 5.2. Install PHP Dependencies',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">5.1. Switch to the backend folder</h4>
+                            <div class="code-block"><pre><code>cd C:\\laragon\\www\\ctsimp\\backend</code></pre></div>
+                            <h4 class="text-xl font-medium mt-4 mb-3">5.2. Install PHP dependencies with Composer</h4>
+                            <div class="code-block"><pre><code>composer install</code></pre></div>
+                            <h4 class="text-xl font-medium mt-4 mb-3">5.2.1. Ensure Laragon Services are Running</h4>
+                            <p class="mb-3">Before proceeding, make sure Laragon is running and that the Apache and MySQL services have been started (they should show as green in the Laragon interface).</p>
+                        `
+                    },
+                    {
+                        id: 'app-key',
+                        title: '5.3. Generate Application Key',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">5.3. Generate application key (if Laravel or similar framework)</h4>
+                            <div class="code-block"><pre><code>php artisan key:generate</code></pre></div>
+                            <p class="mt-2 mb-1"><em class="text-sm text-slate-600">*Note: This generates a local unique app key, which is crucial for the backend to run smoothly and for security features like encryption.</em></p>
+                        `
+                    },
+                    {
+                        id: 'migrations-seed',
+                        title: '5.4. Run Database Migrations & Seed Data',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">5.4. Run database migrations & seed initial data</h4>
+                            <div class="code-block"><pre><code>php artisan migrate
+php artisan db:seed</code></pre></div>
+                            <p class="mt-2 mb-1"><em class="text-sm text-slate-600">*Note on <code>php artisan db:seed</code>: This command typically populates the database with initial data, such as the first admin user. If you need to customize the admin's initial password, you should modify it directly in the relevant seeder file (usually located in the <code>database/seeders</code> directory) *before* running this <code>db:seed</code> command.</em></p>
+                        `
+                    },
+                    {
+                        id: 'php-serve',
+                        title: '5.5. Start PHP Development Server',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">5.5. Start the PHP development server</h4>
+                            <p class="mb-2">This is if you are not using Laragon’s Apache for the backend API directly.</p>
+                            <div class="code-block"><pre><code>php artisan serve --host=127.0.0.1 --port=8000</code></pre></div>
+                            <p class="mt-2 mb-1">The application API should now be accessible at <code>http://127.0.0.1:8000</code>.</p>
+                            <p class="mt-2 mb-1"><em class="text-sm text-slate-600">*Note: If you intend to serve the API via Laragon's Apache, you might configure a virtual host in Laragon pointing to <code>C:\\laragon\\www\\ctsimp\\backend\\public</code> and skip this <code>php artisan serve</code> step.</em></p>
+                        `
+                    }
+                ]
+            },
+            {
+                id: 'frontend-setup',
+                title: '6. Frontend Setup (Node.js)',
+                intro: `
+                    <h3 class="text-2xl font-semibold mb-4 text-sky-600">6. Frontend Setup (Node.js)</h3>
+                    <p class="mb-6">This section details the steps to set up the CTSIMP frontend. This includes installing Node.js dependencies, and then either building the application for production or starting a development server for live reloading and easier debugging.</p>
+                `,
+                subSections: [
+                    {
+                        id: 'node-dependencies',
+                        title: '6.1 & 6.2. Install Node.js Dependencies',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">6.1. Switch to the frontend folder in Laragon’s <code>www</code></h4>
+                            <div class="code-block"><pre><code>cd C:\\laragon\\www\\frontend</code></pre></div>
+                            <h4 class="text-xl font-medium mt-4 mb-3">6.2. Install Node.js dependencies</h4>
+                            <p class="mb-2">Using npm:</p>
+                            <div class="code-block"><pre><code>npm install</code></pre></div>
+                            <p class="mt-3 mb-2">Or, if you use Yarn:</p>
+                            <div class="code-block"><pre><code>yarn install</code></pre></div>
+                        `
+                    },
+                    {
+                        id: 'frontend-build-serve',
+                        title: '6.3. Build or Start in Development Mode',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">6.3. Build or start in development mode</h4>
+                            <p class="mb-2">After installing dependencies, you can start the development server for live reloading or create a production build.</p>
+                            <p class="font-semibold mb-1">Development (hot reload):</p>
+                            <p class="mb-1">Using npm:</p>
+                            <div class="code-block"><pre><code>npm run dev</code></pre></div>
+                            <p class="mt-2 mb-1">Or using Yarn:</p>
+                            <div class="code-block"><pre><code>yarn dev</code></pre></div>
+                            <p class="mt-2 mb-3"><em class="text-sm text-slate-600">*The dev server typically runs at <code>http://localhost:3000</code> or <code>http://localhost:8080</code>. Check the terminal output for the exact address.</em></p>
+                            
+                            <p class="font-semibold mb-1">Production build (for deployment or previewing the build):</p>
+                            <p class="mb-1">Using npm:</p>
+                            <div class="code-block"><pre><code>npm run build
+npm run preview</code></pre></div>
+                            <p class="mt-2 mb-1">Or using Yarn:</p>
+                            <div class="code-block"><pre><code>yarn build
+yarn preview</code></pre></div>
+                        `
+                    },
+                    {
+                        id: 'frontend-backend-connectivity',
+                        title: '6.4. Verify Frontend-Backend Connectivity',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">6.4. Verify frontend-backend connectivity</h4>
+                             <ul class="list-disc list-inside mb-3 pl-4">
+                                <li>Open your browser and visit <code>http://localhost:3000</code> (or your frontend dev server's port).</li>
+                                <li>Ensure that API calls from the frontend (e.g., to <code>http://127.0.0.1:8000/api/...</code> or your configured backend URL) succeed. Check your browser's developer console (Network tab) for any errors.</li>
+                            </ul>
+                        `
+                    }
+                ]
+            },
+            {
+                id: 'optional-tools',
+                title: '7. Optional Tools & Utilities',
+                intro: `
+                    <h3 class="text-2xl font-semibold mb-4 text-sky-600">7. Optional Tools & Utilities</h3>
+                    <p class="mb-6">This section lists additional tools that can be helpful for development, debugging, database management, and API testing. While not strictly required for the basic setup, they can enhance your development workflow.</p>
+                `,
+                subSections: [
+                    {
+                        id: 'opt-tableplus',
+                        title: '7.1. TablePlus',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">7.1. TablePlus</h4>
+                            <p class="mb-3">Use TablePlus (or your preferred database client) to inspect tables, run ad-hoc SQL queries, and verify data inside the <code>ctsimp_db</code> database.</p>
+                        `
+                    },
+                    {
+                        id: 'opt-postman-insomnia',
+                        title: '7.2. Postman or Insomnia',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">7.2. Postman or Insomnia</h4>
+                            <p class="mb-3">These API clients are helpful for testing your backend API endpoints directly (e.g., <code>GET http://127.0.0.1:8000/api/heritage-sites</code>, <code>POST http://127.0.0.1:8000/api/tourist-spots</code>).</p>
+                        `
+                    },
+                    {
+                        id: 'opt-pm2',
+                        title: '7.3. PM2 (Process Manager for Node.js)',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">7.3. PM2 (Process Manager for Node.js)</h4>
+                            <p class="mb-2">PM2 is a production process manager for Node.js applications with a built-in load balancer. It allows you to keep applications alive forever, reload them without downtime, and facilitate common system admin tasks.</p>
+                            <p class="font-semibold mb-1">Install PM2 globally:</p>
+                            <div class="code-block"><pre><code>npm install pm2 -g</code></pre></div>
+                            <p class="font-semibold mt-3 mb-1">Start your frontend application (example):</p>
+                            <p class="mb-1">Navigate to your frontend directory (<code>C:\\laragon\\www\\frontend</code>):</p>
+                            <div class="code-block"><pre><code># If your dev script is 'npm run dev'
+pm2 start npm --name "ctsimp-frontend" -- run dev
+
+# If you have a specific build start script like 'npm run start' for a production build
+# pm2 start npm --name "ctsimp-frontend-prod" -- run start</code></pre></div>
+                            <p class="font-semibold mt-3 mb-1">Manage applications:</p>
+                            <div class="code-block"><pre><code>pm2 list          # List all processes managed by PM2
+pm2 stop &lt;name_or_id&gt;  # Stop a specific process
+pm2 restart &lt;name_or_id&gt; # Restart a specific process
+pm2 delete &lt;name_or_id&gt; # Delete a process from PM2's list
+pm2 logs &lt;name_or_id&gt;  # View logs for a specific process
+pm2 monit         # Monitor CPU and memory usage of all processes</code></pre></div>
+                            <p class="mt-2 mb-1"><em class="text-sm text-slate-600">*Note: While PM2 is very powerful, it might be overkill for simple local development if <code>npm run dev</code> suffices. However, it can be useful for more stable local serving, mimicking a production-like environment, or if you plan to deploy your Node.js application on a server.</em></p>
+                        `
+                    }
+                ]
+            },
+            {
+                id: 'final-verification',
+                title: '8. Final Verification & Troubleshooting',
+                intro: `
+                    <h3 class="text-2xl font-semibold mb-4 text-sky-600">8. Final Verification & Troubleshooting</h3>
+                    <p class="mb-6">After completing the setup steps, it's important to verify that both the backend and frontend are running correctly and can communicate. This section also provides solutions for common issues you might encounter during the setup process.</p>
+                `,
+                subSections: [
+                    {
+                        id: 'verify-backend',
+                        title: '8.1. Verify Backend Endpoints',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">8.1. Verify backend endpoints</h4>
+                             <ul class="list-disc list-inside mb-3 pl-4">
+                                <li>In your browser or using Postman, try accessing a health check or simple API route: <code>GET http://127.0.0.1:8000/api/healthcheck</code> (or similar, depending on your backend routes).</li>
+                                <li>It should return a JSON response indicating the API is running.</li>
+                            </ul>
+                        `
+                    },
+                    {
+                        id: 'verify-frontend',
+                        title: '8.2. Verify Frontend Display',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">8.2. Verify frontend display</h4>
+                            <ul class="list-disc list-inside mb-3 pl-4">
+                                <li>Navigate to <code>http://localhost:3000</code> (or your chosen frontend port).</li>
+                                <li>You should see the interactive map, hopefully with sample data if seeding was successful.</li>
+                            </ul>
+                        `
+                    },
+                    {
+                        id: 'common-issues',
+                        title: '8.3. Common Issues',
+                        content: `
+                            <h4 class="text-xl font-medium mb-3">8.3. Common issues</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="font-semibold">“Could not connect to database”</p>
+                                    <ul class="list-disc list-inside ml-4 text-sm">
+                                        <li>Ensure MySQL is running in Laragon (Green light for MySQL).</li>
+                                        <li>Confirm your <code>.env</code> credentials (<code>DB_USERNAME</code>, <code>DB_PASSWORD</code>, <code>DB_DATABASE</code>, <code>DB_HOST</code>, <code>DB_PORT</code>) match your MySQL setup. Laragon's default MySQL root user usually has no password.</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <p class="font-semibold">“<code>npm run dev</code>” fails with missing dependencies</p>
+                                    <ul class="list-disc list-inside ml-4 text-sm">
+                                        <li>Delete the <code>node_modules/</code> folder in <code>C:\\laragon\\www\\frontend</code> and run <code>npm install</code> (or <code>yarn install</code>) again.</li>
+                                        <li>Ensure your Node.js version is ≥ 18.x.</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <p class="font-semibold">“<code>php artisan migrate</code>” errors out</p>
+                                    <ul class="list-disc list-inside ml-4 text-sm">
+                                        <li>Check that the <code>ctsimp_db</code> database exists (Step 4.3).</li>
+                                        <li>Run <code>php artisan config:clear</code> in the backend directory to clear cached configurations.</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <p class="font-semibold">CORS errors between frontend and backend</p>
+                                    <ul class="list-disc list-inside ml-4 text-sm">
+                                        <li>Ensure your backend’s CORS policy allows requests from your frontend's origin (e.g., <code>http://localhost:3000</code>).</li>
+                                        <li>In Laravel, this is typically configured in <code>config/cors.php</code>. The <code>allowed_origins</code> array should include your frontend URL. For example: <code>'allowed_origins' => ['http://localhost:3000', 'http://127.0.0.1:3000']</code>.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        `
+                    }
+                ]
+            },
+            {
+                id: 'updates-cleanup',
+                title: '9. Updating Dependencies & Cleanup',
+                content: `
+                    <h3 class="text-2xl font-semibold mb-4 text-sky-600">9. Updating Dependencies & Cleanup</h3>
+                    <p class="mb-6">This section provides instructions for updating project dependencies and clearing various caches, which can be useful when you receive project updates or need to resolve issues related to outdated packages or cached configurations.</p>
+                    
+                    <h4 class="text-lg font-medium mb-2">9.1. Extract the latest zip</h4>
+                    <p class="mb-3">If you receive an updated archive, extract it and overwrite existing files as appropriate.</p>
+
+                    <h4 class="text-lg font-medium mb-2">9.2. Update PHP packages (Composer)</h4>
+                    <div class="code-block"><pre><code>cd C:\\laragon\\www\\ctsimp\\backend
+composer update</code></pre></div>
+                    
+                    <h4 class="text-lg font-medium mt-3 mb-2">9.3. Update Node packages (npm or Yarn)</h4>
+                    <p class="mb-1">Using npm:</p>
+                    <div class="code-block"><pre><code>cd C:\\laragon\\www\\frontend
+npm update</code></pre></div>
+                    <p class="mt-2 mb-1">Or for Yarn:</p>
+                    <div class="code-block"><pre><code>cd C:\\laragon\\www\\frontend
+yarn upgrade</code></pre></div>
+
+                    <h4 class="text-lg font-medium mt-3 mb-2">9.4. Clear caches (Laravel)</h4>
+                    <div class="code-block"><pre><code>cd C:\\laragon\\www\\ctsimp\\backend
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear</code></pre></div>
+                `
+            },
+            {
+                id: 'summary-contacts',
+                title: 'Summary & Developer Contacts',
+                content: `
+                    <h3 class="text-2xl font-semibold mb-4 text-sky-600">Summary</h3>
+                    <p class="mb-4">By following all the steps in this guide, you should now have:</p>
+                    <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                        <li>A running MySQL database (<code>ctsimp_db</code>) populated with seed data (if applicable).</li>
+                        <li>The PHP backend (e.g., Laravel) running, typically accessible at <code>http://127.0.0.1:8000</code>.</li>
+                        <li>The Node.js-based frontend running, typically accessible at <code>http://localhost:3000</code> (or similar).</li>
+                        <li>All necessary tools (VS Code, TablePlus, Laragon, Composer, Node.js) installed and configured.</li>
+                    </ul>
+                    <h3 class="text-2xl font-semibold mt-6 mb-4 text-sky-600">Developer Contacts</h3>
+                    <p class="mb-2">If you encounter any issues not covered in the Troubleshooting section, or have further questions, please contact the developers:</p>
+                    <ul class="list-none space-y-1">
+                        <li>Cristian Jay T. Buquis: <a href="mailto:cristianjay.buquis@carsu.edu.ph" class="text-blue-500 hover:underline">cristianjay.buquis@carsu.edu.ph</a></li>
+                        <li>Rodeliza O. Burdeos: <a href="mailto:rodeliza.burdeos@carsu.edu.ph" class="text-blue-500 hover:underline">rodeliza.burdeos@carsu.edu.ph</a></li>
+                        <li>Lowie Vincent A. Canonigo: <a href="mailto:lowievincent.canonigo@carsu.edu.ph" class="text-blue-500 hover:underline">lowievincent.canonigo@carsu.edu.ph</a></li>
+                    </ul>
+                `
+            }
+        ];
+
+        const navigationMenu = document.getElementById('navigationMenu');
+        const contentHost = document.getElementById('contentHost');
+        const copyFeedback = document.getElementById('copyFeedback');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mainContent = document.getElementById('mainContent');
+
+
+        function showCopyFeedback() {
+            copyFeedback.style.opacity = '1';
+            setTimeout(() => {
+                copyFeedback.style.opacity = '0';
+            }, 2000);
+        }
+
+        function makeCodeBlocksCopyable(container) {
+            const codeBlocks = container.querySelectorAll('.code-block');
+            codeBlocks.forEach(block => {
+                const preTag = block.querySelector('pre');
+                if (preTag && !block.querySelector('.copy-button')) { // Avoid adding multiple buttons
+                    const copyButton = document.createElement('button');
+                    copyButton.textContent = 'Copy';
+                    copyButton.className = 'copy-button';
+                    copyButton.onclick = () => {
+                        const tempTextArea = document.createElement('textarea');
+                        tempTextArea.value = preTag.textContent;
+                        document.body.appendChild(tempTextArea);
+                        tempTextArea.select();
+                        try {
+                            document.execCommand('copy');
+                            showCopyFeedback();
+                        } catch (err) {
+                            console.error('Failed to copy text: ', err);
+                            // Fallback or error message if needed
+                        }
+                        document.body.removeChild(tempTextArea);
+                    };
+                    block.appendChild(copyButton);
+                }
+            });
+        }
+        
+        function loadContent(sectionId, subSectionId = null) {
+            const section = sections.find(s => s.id === sectionId);
+            if (!section) {
+                contentHost.innerHTML = '<p>Section not found.</p>';
+                return;
+            }
+
+            let html = '';
+            if (section.intro) {
+                html += section.intro;
+            }
+
+            if (subSectionId) {
+                const subSection = section.subSections.find(sub => sub.id === subSectionId);
+                if (subSection) {
+                    html = (section.intro ? section.intro : `<h3 class="text-2xl font-semibold mb-4 text-sky-600">${section.title}</h3>`) + subSection.content;
+                } else {
+                    html += '<p>Sub-section not found.</p>';
+                }
+            } else if (section.subSections) {
+                // Display list of sub-sections if no specific subSectionId is provided
+                html += '<ul class="space-y-3 mt-4">';
+                section.subSections.forEach(sub => {
+                    html += `<li><a href="#" data-section="${section.id}" data-subsection="${sub.id}" class="text-blue-600 hover:text-blue-800 hover:underline text-lg p-2 block rounded-md transition-colors duration-150 ease-in-out bg-slate-200 hover:bg-slate-300">${sub.title}</a></li>`;
+                });
+                html += '</ul>';
+            } else {
+                // This is for sections without subSections
+                html = section.content;
+            }
+            
+            contentHost.innerHTML = html;
+            makeCodeBlocksCopyable(contentHost);
+            contentHost.scrollTop = 0; // Scroll to top of content area
+
+            // Update active state in sidebar
+            document.querySelectorAll('#navigationMenu .sidebar-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-section') === sectionId) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Close sidebar on mobile after navigation
+            if (window.innerWidth < 768) {
+                sidebar.classList.remove('open');
+            }
+        }
+
+        sections.forEach(section => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = '#';
+            a.textContent = section.title;
+            a.className = 'sidebar-item block py-2 px-3 rounded-md hover:bg-slate-700 transition-colors duration-150 ease-in-out';
+            a.setAttribute('data-section', section.id);
+            li.appendChild(a);
+            navigationMenu.appendChild(li);
+        });
+
+        navigationMenu.addEventListener('click', (event) => {
+            event.preventDefault();
+            const target = event.target.closest('a.sidebar-item');
+            if (target) {
+                const sectionId = target.getAttribute('data-section');
+                loadContent(sectionId);
+            }
+        });
+        
+        contentHost.addEventListener('click', (event) => {
+            const target = event.target.closest('a[data-section][data-subsection]');
+            if (target) {
+                event.preventDefault();
+                const sectionId = target.getAttribute('data-section');
+                const subSectionId = target.getAttribute('data-subsection');
+                loadContent(sectionId, subSectionId);
+            }
+        });
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+        
+        // Close sidebar if clicking outside on mobile
+        mainContent.addEventListener('click', () => {
+            if (window.innerWidth < 768 && sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+
+        // Load overview content by default
+        loadContent('overview');
+
+    </script>
+</body>
+</html>
